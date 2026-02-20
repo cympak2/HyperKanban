@@ -2,7 +2,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperKanban.Web", "HyperKanban.Web\HyperKanban.Web.csproj", "{60C514C1-47FD-98E2-30FA-36EE5AC6C667}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "containers", "containers", "{74D2E9E7-7D7D-5ED5-34D4-C57888BDA749}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements-generator", "requirements-generator", "{2314D66B-962D-D6E5-CABB-7DB0106A0225}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequirementsGenerator", "containers\requirements-generator\RequirementsGenerator.csproj", "{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "idea-analyzer", "idea-analyzer", "{DDC06059-6173-3039-B00E-62F6EF4DA72F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdeaAnalyzer", "containers\idea-analyzer\IdeaAnalyzer.csproj", "{58FF5958-6E7C-3DBA-914A-4C658992E15B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{FE360695-3F2B-1049-3887-35FBB5135923}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperKanban.API", "src\backend\HyperKanban.API\HyperKanban.API.csproj", "{EAA90C12-8471-2B22-0703-D91A19438532}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,15 +24,31 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{60C514C1-47FD-98E2-30FA-36EE5AC6C667}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{60C514C1-47FD-98E2-30FA-36EE5AC6C667}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{60C514C1-47FD-98E2-30FA-36EE5AC6C667}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{60C514C1-47FD-98E2-30FA-36EE5AC6C667}.Release|Any CPU.Build.0 = Release|Any CPU
+		{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58FF5958-6E7C-3DBA-914A-4C658992E15B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58FF5958-6E7C-3DBA-914A-4C658992E15B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58FF5958-6E7C-3DBA-914A-4C658992E15B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58FF5958-6E7C-3DBA-914A-4C658992E15B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAA90C12-8471-2B22-0703-D91A19438532}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAA90C12-8471-2B22-0703-D91A19438532}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAA90C12-8471-2B22-0703-D91A19438532}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAA90C12-8471-2B22-0703-D91A19438532}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2314D66B-962D-D6E5-CABB-7DB0106A0225} = {74D2E9E7-7D7D-5ED5-34D4-C57888BDA749}
+		{498ECDD7-BD3F-FC15-0BA9-6F6D39CD28EB} = {2314D66B-962D-D6E5-CABB-7DB0106A0225}
+		{DDC06059-6173-3039-B00E-62F6EF4DA72F} = {74D2E9E7-7D7D-5ED5-34D4-C57888BDA749}
+		{58FF5958-6E7C-3DBA-914A-4C658992E15B} = {DDC06059-6173-3039-B00E-62F6EF4DA72F}
+		{FE360695-3F2B-1049-3887-35FBB5135923} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{EAA90C12-8471-2B22-0703-D91A19438532} = {FE360695-3F2B-1049-3887-35FBB5135923}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F132D1E6-6BDE-4738-B29F-6C0E2D591153}
+		SolutionGuid = {34F70D27-EB3F-4795-9805-1900CAFE7961}
 	EndGlobalSection
 EndGlobal

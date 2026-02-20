@@ -1,0 +1,6 @@
+@HyperKanban.API_HostAddress = http://localhost:5068
+
+GET {{HyperKanban.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
