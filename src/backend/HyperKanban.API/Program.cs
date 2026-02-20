@@ -37,7 +37,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(
-            builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000" }
+            builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000"}
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
@@ -100,6 +100,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Handle browser Private Network Access preflight (allows public origins like ngrok to reach localhost)
+app.Use(async (context, next) =>
+{
+    if (context.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
+    {
+        context.Response.Headers.Append("Access-Control-Allow-Private-Network", "true");
+    }
+    await next();
+});
+
 app.UseCors();
 
 // app.UseAuthentication(); // Enable when Azure AD is configured
