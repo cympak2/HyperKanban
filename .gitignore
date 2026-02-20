@@ -98,7 +98,6 @@ CosmosDB.Emulator/
 .cache/
 
 # Package managers
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
