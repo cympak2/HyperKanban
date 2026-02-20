@@ -82,6 +82,8 @@ jobs:
       - name: Build with Next.js
         working-directory: ${{ env.FRONTEND_DIR }}
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
