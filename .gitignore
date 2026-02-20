@@ -106,7 +106,6 @@ pnpm-lock.yaml
 *.nupkg
 *.snupkg
 docs/
-.github/
 plans/
 *SUMMARY.md
 .editorconfig
