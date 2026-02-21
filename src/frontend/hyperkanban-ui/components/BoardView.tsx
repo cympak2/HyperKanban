@@ -29,6 +29,8 @@ export function BoardView({ boardId }: BoardViewProps) {
   const [swimlanes, setSwimlanes] = useState<SwimlaneType[]>([]);
   const [swimlaneChildren, setSwimlaneChildren] = useState<Record<string, WorkItem[]>>({});
   const [regularWorkItems, setRegularWorkItems] = useState<WorkItem[]>([]);
+  // parentWorkItemId → completion info fetched from the linked child board
+  const [swimlaneCompletionMap, setSwimlaneCompletionMap] = useState<Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }>>({});
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
@@ -93,6 +95,28 @@ export function BoardView({ boardId }: BoardViewProps) {
     }
   }, [boardId, board]); // Refetch when board changes
 
+  // Build a parentWorkItemId → completion map by calling the completion-status endpoint
+  // for each item that has a swimlaneBoardId (i.e. has children on a linked board)
+  const fetchCompletionForItems = async (items: WorkItem[]) => {
+    const itemsWithWorkflow = items.filter(i => i.swimlaneBoardId);
+    const completionMap: Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }> = {};
+    await Promise.all(
+      itemsWithWorkflow.map(async (item) => {
+        try {
+          const status = await apiService.getCompletionStatus(boardId, item.id);
+          completionMap[item.id] = {
+            childCount: status.totalChildren,
+            completedChildCount: status.completedChildren,
+            isAllChildrenComplete: status.allChildrenComplete,
+          };
+        } catch {
+          // ignore per-item errors
+        }
+      })
+    );
+    setSwimlaneCompletionMap(completionMap);
+  };
+
   // Fetch regular work items (non-children) for the default swimlane
   useEffect(() => {
     const fetchRegularWorkItems = async () => {
@@ -101,6 +125,8 @@ export function BoardView({ boardId }: BoardViewProps) {
         // Filter out items that are children (have parentWorkItemId)
         const regular = allItems.filter(item => !item.parentWorkItemId);
         setRegularWorkItems(regular);
+        // Fetch completion info from each linked child board
+        await fetchCompletionForItems(regular);
       } catch (err) {
         console.error('Failed to load work items:', err);
       }
@@ -165,6 +191,7 @@ export function BoardView({ boardId }: BoardViewProps) {
       const allItems = await apiService.getWorkItems(boardId);
       const regular = allItems.filter(item => !item.parentWorkItemId);
       setRegularWorkItems(regular);
+      await fetchCompletionForItems(regular);
     } catch (err) {
       console.error('Failed to refresh data:', err);
     }
@@ -454,6 +481,7 @@ export function BoardView({ boardId }: BoardViewProps) {
                           onClick={() => handleWorkItemClick(item.id)}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
+                          swimlaneCompletion={swimlaneCompletionMap[item.id]}
                         />
                       ))}
                     </div>

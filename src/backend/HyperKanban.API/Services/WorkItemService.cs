@@ -691,7 +691,11 @@ public class WorkItemService : IWorkItemService
     }
 
     /// <summary>
-    /// Check completion status of all child tickets for a parent
+    /// Check completion status of all child tickets for a parent.
+    /// A child is considered complete when it is either:
+    ///   (a) in the last column of its board, OR
+    ///   (b) has its own sub-workflow and that sub-workflow is fully complete.
+    /// This allows completion to bubble up through multi-level board hierarchies.
     /// </summary>
     public async Task<(int total, int completed, bool allComplete)> CheckChildCompletionStatusAsync(
         string parentWorkItemId,
@@ -708,8 +712,29 @@ public class WorkItemService : IWorkItemService
         var parent = await _workItemRepository.GetByIdAsync(parentWorkItemId, parentBoardId);
         var targetBoard = await _boardRepository.GetByIdAsync(parent!.SwimlaneBoardId!);
 
-        var doneColumnIds = targetBoard!.Columns.Where(c => c.IsDoneState).Select(c => c.Id).ToHashSet();
-        var completed = children.Count(c => doneColumnIds.Contains(c.CurrentColumn));
+        // Completion is defined as being in the last column (highest Position) on the child board.
+        // IsDoneState is intentionally NOT used here — it marks cross-board transfer triggers,
+        // not necessarily the final "Done" column.
+        var lastColumn = targetBoard!.Columns.OrderByDescending(c => c.Position).FirstOrDefault();
+        var lastColumnId = lastColumn?.Id;
+
+        int completed = 0;
+        foreach (var child in children)
+        {
+            if (lastColumnId != null && child.CurrentColumn == lastColumnId)
+            {
+                // (a) child is in the last column — directly complete
+                completed++;
+            }
+            else if (!string.IsNullOrEmpty(child.SwimlaneBoardId) && child.ChildWorkItemIds.Any())
+            {
+                // (b) child has its own sub-workflow — check if it is fully complete
+                var (_, _, subAllComplete) = await CheckChildCompletionStatusAsync(child.Id, targetBoard.Id);
+                if (subAllComplete)
+                    completed++;
+            }
+        }
+
         var allComplete = completed == total;
 
         // Check if we should auto-advance the parent

@@ -122,11 +122,11 @@ export default function ColumnSettingsModal({
                 className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">
-                Mark as Done State (triggers cross-board transfers)
+                Triggers cross-board transfers
               </span>
             </label>
             <p className="text-xs text-gray-500 ml-6">
-              When enabled, work items moved to this column will automatically transfer to the next board if configured.
+              When enabled, work items moved to this column will automatically transfer to the next board if configured. Completion is always tracked by the last column on the board.
             </p>
           </div>
 

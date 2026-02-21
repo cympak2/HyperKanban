@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WorkItemCard } from './WorkItemCard';
 import CreateWorkItemModal from './CreateWorkItemModal';
 import type { Swimlane as SwimlaneType, Column, WorkItem } from '@/types';
@@ -98,6 +98,28 @@ export function Swimlane({
   const colors = COLOR_SCHEMES[colorIndex % COLOR_SCHEMES.length];
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState<string | null>(null);
+  // completion data for child items that themselves have sub-workflows
+  const [childCompletionMap, setChildCompletionMap] = useState<Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }>>({});
+
+  useEffect(() => {
+    const itemsWithWorkflow = childWorkItems.filter(i => i.swimlaneBoardId);
+    if (itemsWithWorkflow.length === 0) return;
+    const completionMap: Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }> = {};
+    Promise.all(
+      itemsWithWorkflow.map(async (item) => {
+        try {
+          const status = await apiService.getCompletionStatus(boardId, item.id);
+          completionMap[item.id] = {
+            childCount: status.totalChildren,
+            completedChildCount: status.completedChildren,
+            isAllChildrenComplete: status.allChildrenComplete,
+          };
+        } catch {
+          // ignore per-item errors
+        }
+      })
+    ).then(() => setChildCompletionMap({ ...completionMap }));
+  }, [boardId, childWorkItems]);
 
   const handleDragOver = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
@@ -266,6 +288,7 @@ export function Swimlane({
                     onClick={() => onWorkItemClick?.(item.id)}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    swimlaneCompletion={childCompletionMap[item.id]}
                   />
                 ))}
               </div>

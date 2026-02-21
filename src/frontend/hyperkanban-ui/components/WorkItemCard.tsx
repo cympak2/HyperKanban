@@ -7,6 +7,11 @@ interface WorkItemCardProps {
   onClick?: () => void;
   onDragStart?: (workItem: WorkItem) => void;
   onDragEnd?: () => void;
+  swimlaneCompletion?: {
+    childCount: number;
+    completedChildCount: number;
+    isAllChildrenComplete: boolean;
+  };
 }
 
 const stateColors: Record<WorkItemState, string> = {
@@ -17,6 +22,14 @@ const stateColors: Record<WorkItemState, string> = {
   Error: 'bg-red-100 text-red-700',
 };
 
+const stateLabels: Record<WorkItemState, string> = {
+  Pending: 'Pending',
+  Processing: 'Processing',
+  WaitingForApproval: 'In Workflow',
+  Completed: 'Completed',
+  Error: 'Error',
+};
+
 const priorityColors: Record<WorkItemPriority, string> = {
   Low: 'bg-gray-200 text-gray-600',
   Medium: 'bg-blue-200 text-blue-600',
@@ -24,7 +37,7 @@ const priorityColors: Record<WorkItemPriority, string> = {
   Critical: 'bg-red-200 text-red-600',
 };
 
-export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd }: WorkItemCardProps) {
+export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd, swimlaneCompletion }: WorkItemCardProps) {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', workItem.id);
@@ -37,7 +50,7 @@ export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd }: Work
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-move"
+      className={`bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-move border ${swimlaneCompletion?.isAllChildrenComplete ? 'border-green-400 border-2' : 'border-gray-200'}`}
       onClick={onClick}
       draggable
       onDragStart={handleDragStart}
@@ -56,12 +69,38 @@ export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd }: Work
               {workItem.title}
             </h3>
           </div>
-          {workItem.swimlaneBoardId && workItem.childWorkItemIds && workItem.childWorkItemIds.length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>Workflow in progress (Board ID: {workItem.swimlaneBoardId.substring(0, 8)}...)</span>
+          {workItem.swimlaneBoardId && (
+            <div className="mt-1">
+              {swimlaneCompletion ? (
+                swimlaneCompletion.isAllChildrenComplete ? (
+                  <div className="flex items-center gap-1 text-xs text-green-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>All sub-items done ({swimlaneCompletion.completedChildCount}/{swimlaneCompletion.childCount})</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>{swimlaneCompletion.completedChildCount}/{swimlaneCompletion.childCount} sub-items done</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-blue-500 h-1.5 rounded-full transition-all"
+                        style={{ width: `${swimlaneCompletion.childCount > 0 ? (swimlaneCompletion.completedChildCount / swimlaneCompletion.childCount) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center gap-1 text-xs text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>Workflow in progress</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -76,7 +115,7 @@ export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd }: Work
 
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className={`px-2 py-1 rounded-full ${stateColors[workItem.state]}`}>
-          {workItem.state}
+          {stateLabels[workItem.state]}
         </span>
 
         {workItem.state === 'Processing' && (
