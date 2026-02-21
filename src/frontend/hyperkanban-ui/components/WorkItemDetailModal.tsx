@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { WorkItem, Board, WorkItemPriority } from '@/types';
+import type { WorkItem, Board, WorkItemPriority, Swimlane, CompletionStatus } from '@/types';
 import { apiService } from '@/services/api';
 import MarkdownRenderer from './MarkdownRenderer';
 import MarkdownEditor from './MarkdownEditor';
@@ -13,9 +13,11 @@ interface WorkItemDetailModalProps {
   board: Board | null;
   onClose: () => void;
   onSuccess: () => void;
+  swimlanes?: Swimlane[];
+  onNavigateToItem?: (targetBoardId: string, workItemId: string) => void;
 }
 
-export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, onClose, onSuccess }: WorkItemDetailModalProps) {
+export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, onClose, onSuccess, swimlanes, onNavigateToItem }: WorkItemDetailModalProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,9 +34,42 @@ export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, 
   const [newTag, setNewTag] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
+  // Sub-items / swimlane state
+  const [childWorkItems, setChildWorkItems] = useState<WorkItem[]>([]);
+  const [completionStatus, setCompletionStatus] = useState<CompletionStatus | null>(null);
+  const [childrenLoading, setChildrenLoading] = useState(false);
+  const [swimlaneBoardName, setSwimlaneBoardName] = useState<string | null>(null);
+
   // Comments state
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
+
+  // Fetch child work items when viewing a parent.
+  // Guard: only fetch when the item actually has children registered in the system.
+  useEffect(() => {
+    const hasChildren = workItem?.childWorkItemIds && workItem.childWorkItemIds.length > 0;
+    if (!workItem?.swimlaneBoardId || !hasChildren) {
+      setChildWorkItems([]);
+      setCompletionStatus(null);
+      setSwimlaneBoardName(null);
+      return;
+    }
+    setChildrenLoading(true);
+    // Fetch children and board name together; completion-status is best-effort —
+    // it may 400 if the parent record hasn't been created yet, so fail it silently.
+    Promise.all([
+      apiService.getChildTickets(workItem.boardId, workItem.id),
+      apiService.getBoard(workItem.swimlaneBoardId),
+      apiService.getCompletionStatus(workItem.boardId, workItem.id).catch(() => null),
+    ])
+      .then(([children, swimlaneBoard, status]) => {
+        setChildWorkItems(children);
+        setSwimlaneBoardName(swimlaneBoard.name);
+        setCompletionStatus(status);
+      })
+      .catch((err) => console.error('Failed to load sub-items:', err))
+      .finally(() => setChildrenLoading(false));
+  }, [workItem?.id, workItem?.swimlaneBoardId, workItem?.childWorkItemIds?.length]);
 
   // Initialize edit fields when workItem changes
   useEffect(() => {
@@ -98,6 +133,9 @@ export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, 
     setError(null);
     setActiveTab('details');
     setIsEditMode(false);
+    setChildWorkItems([]);
+    setCompletionStatus(null);
+    setSwimlaneBoardName(null);
     setNewComment('');
     onClose();
   };
@@ -199,6 +237,16 @@ export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, 
 
   const isWaitingForApproval = workItem.state === 'WaitingForApproval';
   const currentColumn = board?.columns.find(col => col.id === workItem.currentColumn);
+
+  // Parent swimlane entry (when viewing a child ticket)
+  const parentSwimlane = workItem.parentWorkItemId
+    ? swimlanes?.find(s => s.parentWorkItemId === workItem.parentWorkItemId)
+    : undefined;
+
+  // Sub-items progress — prefer backend-computed values (based on isDoneState columns, not AI state)
+  const completedChildCount = completionStatus?.completedChildren ?? childWorkItems.filter(c => c.state === 'Completed').length;
+  const childCount = completionStatus?.totalChildren ?? childWorkItems.length;
+  const allChildrenComplete = completionStatus?.allChildrenComplete ?? (childCount > 0 && completedChildCount === childCount);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -305,6 +353,133 @@ export default function WorkItemDetailModal({ isOpen, workItem, boardId, board, 
               {!isEditMode ? (
                 // View Mode
                 <>
+                  {/* Parent Ticket */}
+                  {parentSwimlane && (
+                    <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                        </svg>
+                        Parent Ticket
+                      </h3>
+                      <div
+                        className={`flex items-center justify-between gap-3 bg-white rounded-lg p-3 border border-blue-200 ${
+                          onNavigateToItem ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all' : ''
+                        }`}
+                        onClick={() =>
+                          onNavigateToItem &&
+                          onNavigateToItem(parentSwimlane.parentBoardId, parentSwimlane.parentWorkItemId)
+                        }
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">{parentSwimlane.parentTitle}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Board: {parentSwimlane.parentBoardName} · Column: {parentSwimlane.parentCurrentColumn}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            parentSwimlane.isAllChildrenComplete
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {parentSwimlane.completedChildCount}/{parentSwimlane.childCount} done
+                          </span>
+                          {onNavigateToItem && (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-Items (Swimlane children) */}
+                  {workItem.swimlaneBoardId && (
+                    <div className="border border-purple-200 bg-purple-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-purple-800 flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          Sub-Items{swimlaneBoardName ? ` on ${swimlaneBoardName}` : ''}
+                        </h3>
+                        {!childrenLoading && childCount > 0 && (
+                          <span className="text-xs text-purple-700 font-medium">
+                            {completedChildCount}/{childCount} done
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Progress bar */}
+                      {!childrenLoading && childCount > 0 && (
+                        <div className="mb-3">
+                          <div className="bg-purple-200 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-1.5 rounded-full transition-all ${
+                                allChildrenComplete ? 'bg-green-500' : 'bg-purple-500'
+                              }`}
+                              style={{ width: `${(completedChildCount / childCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {childrenLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-purple-600 py-2">
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Loading sub-items...
+                        </div>
+                      ) : childWorkItems.length === 0 ? (
+                        <p className="text-sm text-purple-600 py-1">No sub-items yet</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {childWorkItems.map((child) => (
+                            <div
+                              key={child.id}
+                              className={`flex items-center justify-between gap-3 bg-white rounded-lg p-3 border border-purple-200 ${
+                                onNavigateToItem ? 'cursor-pointer hover:border-purple-400 hover:shadow-sm transition-all' : ''
+                              }`}
+                              onClick={() =>
+                                onNavigateToItem && onNavigateToItem(child.boardId, child.id)
+                              }
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                {child.state === 'Completed' && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                                <span className={`text-sm truncate ${
+                                  child.state === 'Completed' ? 'text-gray-400 line-through' : 'text-gray-900'
+                                }`}>
+                                  {child.title}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getStateBadgeColor(child.state)}`}>
+                                  {child.state}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityBadgeColor(child.priority)}`}>
+                                  {child.priority}
+                                </span>
+                                {onNavigateToItem && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>

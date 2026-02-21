@@ -102,13 +102,13 @@ export function Swimlane({
   const [childCompletionMap, setChildCompletionMap] = useState<Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }>>({});
 
   useEffect(() => {
-    const itemsWithWorkflow = childWorkItems.filter(i => i.swimlaneBoardId);
+    const itemsWithWorkflow = childWorkItems.filter(i => i.swimlaneBoardId && i.childWorkItemIds && i.childWorkItemIds.length > 0);
     if (itemsWithWorkflow.length === 0) return;
     const completionMap: Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }> = {};
     Promise.all(
       itemsWithWorkflow.map(async (item) => {
         try {
-          const status = await apiService.getCompletionStatus(boardId, item.id);
+          const status = await apiService.getCompletionStatus(item.boardId, item.id);
           completionMap[item.id] = {
             childCount: status.totalChildren,
             completedChildCount: status.completedChildren,

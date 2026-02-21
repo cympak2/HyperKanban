@@ -33,6 +33,9 @@ export function BoardView({ boardId }: BoardViewProps) {
   const [swimlaneCompletionMap, setSwimlaneCompletionMap] = useState<Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }>>({});
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  // Track which board & board object is active in the detail modal (may differ when navigating cross-board)
+  const [selectedItemBoardId, setSelectedItemBoardId] = useState<string>(boardId);
+  const [selectedItemBoard, setSelectedItemBoard] = useState<Board | null>(null);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
   // Determine which columns link to another board
@@ -98,12 +101,12 @@ export function BoardView({ boardId }: BoardViewProps) {
   // Build a parentWorkItemId → completion map by calling the completion-status endpoint
   // for each item that has a swimlaneBoardId (i.e. has children on a linked board)
   const fetchCompletionForItems = async (items: WorkItem[]) => {
-    const itemsWithWorkflow = items.filter(i => i.swimlaneBoardId);
+    const itemsWithWorkflow = items.filter(i => i.swimlaneBoardId && i.childWorkItemIds && i.childWorkItemIds.length > 0);
     const completionMap: Record<string, { childCount: number; completedChildCount: number; isAllChildrenComplete: boolean }> = {};
     await Promise.all(
       itemsWithWorkflow.map(async (item) => {
         try {
-          const status = await apiService.getCompletionStatus(boardId, item.id);
+          const status = await apiService.getCompletionStatus(item.boardId, item.id);
           completionMap[item.id] = {
             childCount: status.totalChildren,
             completedChildCount: status.completedChildren,
@@ -141,9 +144,26 @@ export function BoardView({ boardId }: BoardViewProps) {
     try {
       const workItem = await apiService.getWorkItem(boardId, workItemId);
       setSelectedWorkItem(workItem);
+      setSelectedItemBoardId(boardId);
+      setSelectedItemBoard(board);
       setIsWorkItemDetailModalOpen(true);
     } catch (err) {
       console.error('Failed to load work item:', err);
+    }
+  };
+
+  const handleNavigateToItem = async (targetBoardId: string, workItemId: string) => {
+    try {
+      const [item, targetBoard] = await Promise.all([
+        apiService.getWorkItem(targetBoardId, workItemId),
+        apiService.getBoard(targetBoardId),
+      ]);
+      setSelectedWorkItem(item);
+      setSelectedItemBoardId(targetBoardId);
+      setSelectedItemBoard(targetBoard);
+      setIsWorkItemDetailModalOpen(true);
+    } catch (err) {
+      console.error('Failed to navigate to item:', err);
     }
   };
 
@@ -502,10 +522,12 @@ export function BoardView({ boardId }: BoardViewProps) {
       <WorkItemDetailModal
         isOpen={isWorkItemDetailModalOpen}
         workItem={selectedWorkItem}
-        boardId={boardId}
-        board={board}
+        boardId={selectedItemBoardId}
+        board={selectedItemBoard || board}
         onClose={() => setIsWorkItemDetailModalOpen(false)}
         onSuccess={handleWorkItemSuccess}
+        swimlanes={swimlanes}
+        onNavigateToItem={handleNavigateToItem}
       />
 
       {board && (

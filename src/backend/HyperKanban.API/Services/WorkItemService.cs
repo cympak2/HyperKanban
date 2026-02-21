@@ -674,12 +674,21 @@ public class WorkItemService : IWorkItemService
     }
 
     /// <summary>
-    /// Get all child tickets for a parent work item
+    /// Get all child tickets for a parent work item.
+    /// Returns an empty list if the parent is not found (e.g. orphaned references after board transfers).
     /// </summary>
     public async Task<List<WorkItem>> GetChildTicketsAsync(string parentWorkItemId, string parentBoardId)
     {
-        var parent = await _workItemRepository.GetByIdAsync(parentWorkItemId, parentBoardId)
-            ?? throw new InvalidOperationException($"Parent work item {parentWorkItemId} not found");
+        var parent = await _workItemRepository.GetByIdAsync(parentWorkItemId, parentBoardId);
+
+        // Parent not found — could be orphaned data after a board transfer; return empty gracefully
+        if (parent == null)
+        {
+            _logger.LogWarning(
+                "GetChildTicketsAsync: parent work item {ParentId} not found on board {BoardId} — returning empty list",
+                parentWorkItemId, parentBoardId);
+            return new List<WorkItem>();
+        }
 
         if (string.IsNullOrEmpty(parent.SwimlaneBoardId))
         {

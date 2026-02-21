@@ -35,7 +35,10 @@ public class MySqlWorkItemRepository : IWorkItemRepository
     {
         _logger.LogInformation("Repository.GetByBoardIdAsync: Starting for boardId={BoardId}", boardId);
         
-        // Use FromSqlRaw to bypass JSON deserialization issues
+        // Use FromSqlRaw to bypass JSON deserialization issues for complex list columns;
+        // heavy collections (AuditTrail, AiProcessingHistory, BoardHistory) are excluded for
+        // performance — they are not needed for the board view. ChildWorkItemIds IS needed
+        // for completion-status calculations so we read its real value here.
         var result = await _context.WorkItems
             .FromSqlRaw(@"
                 SELECT Id, BoardId, Title, Description, CurrentColumn, State, Priority, 
@@ -43,7 +46,8 @@ public class MySqlWorkItemRepository : IWorkItemRepository
                        Creator, Created, LastModified, PreviousBoardId, Resolution,
                        ParentWorkItemId, SwimlaneBoardId,
                        '[]' as AuditTrail, '[]' as AiProcessingHistory, 
-                       '[]' as BoardHistory, '[]' as ChildWorkItemIds,
+                       '[]' as BoardHistory,
+                       COALESCE(NULLIF(ChildWorkItemIds, ''), '[]') as ChildWorkItemIds,
                        COALESCE(NULLIF(Comments, ''), '[]') as Comments
                 FROM WorkItems 
                 WHERE BoardId = {0}
