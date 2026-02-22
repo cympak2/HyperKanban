@@ -1,5 +1,7 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { WorkItem, WorkItemState, WorkItemPriority } from '@/types';
 
 interface WorkItemCardProps {
@@ -66,7 +68,18 @@ export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd, swimla
               <span className="text-xs" title={`Has ${workItem.childWorkItemIds.length} child ticket(s)`}>👨‍👩‍👧‍👦</span>
             )}
             <h3 className="font-medium text-gray-900 line-clamp-2">
-              {workItem.title}
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <span>{children}</span>,
+                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                  em: ({ children }) => <em>{children}</em>,
+                  code: ({ children }) => <code className="bg-gray-100 px-0.5 rounded text-xs font-mono">{children}</code>,
+                  a: ({ children }) => <span className="text-blue-600 underline">{children}</span>,
+                }}
+              >
+                {workItem.title}
+              </ReactMarkdown>
             </h3>
           </div>
           {workItem.swimlaneBoardId && (
@@ -109,9 +122,11 @@ export function WorkItemCard({ workItem, onClick, onDragStart, onDragEnd, swimla
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-        {workItem.description}
-      </p>
+      <div className="text-sm text-gray-600 mb-3 line-clamp-3 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5 [&_strong]:font-semibold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_a]:text-blue-600 [&_a]:underline [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {workItem.description}
+        </ReactMarkdown>
+      </div>
 
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className={`px-2 py-1 rounded-full ${stateColors[workItem.state]}`}>
