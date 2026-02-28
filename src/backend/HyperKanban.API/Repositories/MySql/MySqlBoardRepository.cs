@@ -51,6 +51,7 @@ public class MySqlBoardRepository : IBoardRepository
         existing.Created = board.Created;
         existing.LastModified = board.LastModified;
         existing.NextBoardId = board.NextBoardId;
+        existing.ProjectId = board.ProjectId;
         
         // Update complex properties
         existing.Columns = board.Columns;

@@ -2,6 +2,9 @@ import type {
   Board,
   WorkItem,
   ContainerConfig,
+  Project,
+  CreateProjectRequest,
+  UpdateProjectRequest,
   CreateBoardRequest,
   CreateWorkItemRequest,
   MoveWorkItemRequest,
@@ -262,6 +265,35 @@ class ApiService {
 
   async getContainerConfig(id: string): Promise<ContainerConfig> {
     return this.request<ContainerConfig>(`/api/v1/containerconfigs/${id}`);
+  }
+
+  // Project APIs
+  async getProjects(): Promise<Project[]> {
+    return this.request<Project[]>('/api/projects');
+  }
+
+  async getProject(id: string): Promise<Project> {
+    return this.request<Project>(`/api/projects/${id}`);
+  }
+
+  async createProject(data: CreateProjectRequest): Promise<Project> {
+    return this.request<Project>('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProject(id: string, data: UpdateProjectRequest): Promise<Project> {
+    return this.request<Project>(`/api/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await this.request(`/api/projects/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

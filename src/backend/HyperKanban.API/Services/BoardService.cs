@@ -79,6 +79,9 @@ public class BoardService : IBoardService
             }
         }
 
+        if (!string.IsNullOrEmpty(request.ProjectId))
+            board.ProjectId = request.ProjectId;
+
         return await _boardRepository.CreateAsync(board);
     }
 
@@ -191,6 +194,9 @@ public class BoardService : IBoardService
             }
             board.ColumnTransitionMap = request.ColumnTransitionMap;
         }
+
+        if (request.ProjectId != null)
+            board.ProjectId = string.IsNullOrEmpty(request.ProjectId) ? null : request.ProjectId;
 
         board.LastModified = DateTime.UtcNow;
         return await _boardRepository.UpdateAsync(board);

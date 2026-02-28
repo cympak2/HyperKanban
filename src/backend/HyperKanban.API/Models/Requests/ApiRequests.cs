@@ -4,7 +4,22 @@ public class CreateBoardRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string? ProjectId { get; set; }
     public List<CreateColumnRequest>? Columns { get; set; }
+}
+
+public class CreateProjectRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+}
+
+public class UpdateProjectRequest
+{
+    public string? Name { get; set; }
+    public string? Code { get; set; }
+    public string? Description { get; set; }
 }
 
 public class CreateColumnRequest
@@ -61,6 +76,7 @@ public class UpdateBoardRequest
     public BoardType? Type { get; set; }
     public string? NextBoardId { get; set; } // Default target board for completed work items
     public Dictionary<string, string>? ColumnTransitionMap { get; set; } // columnId -> "boardId:columnId"
+    public string? ProjectId { get; set; }
 }
 
 public class UpdateColumnRequest

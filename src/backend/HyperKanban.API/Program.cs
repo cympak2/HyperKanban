@@ -61,6 +61,7 @@ builder.Services.AddDbContext<HyperKanbanDbContext>(options =>
 builder.Services.AddScoped<IBoardRepository, MySqlBoardRepository>();
 builder.Services.AddScoped<IWorkItemRepository, MySqlWorkItemRepository>();
 builder.Services.AddScoped<IContainerConfigRepository, MySqlContainerConfigRepository>();
+builder.Services.AddScoped<IProjectRepository, MySqlProjectRepository>();
 
 Log.Information("Using MySQL database");
 
@@ -69,6 +70,7 @@ builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IBoardSeedingService, BoardSeedingService>();
 builder.Services.AddScoped<IWorkItemService, WorkItemService>();
 builder.Services.AddScoped<IContainerExecutionService, AciExecutionService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 var app = builder.Build();
 
@@ -85,6 +87,10 @@ try
         await SeedMySqlContainerConfigsAsync(context);
         Log.Information("Container configs seeded successfully");
     }
+
+    var projectService = scope.ServiceProvider.GetRequiredService<IProjectService>();
+    await projectService.SeedDemoProjectAsync();
+    Log.Information("Project seeding completed");
 }
 catch (Exception ex)
 {

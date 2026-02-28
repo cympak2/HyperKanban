@@ -15,6 +15,7 @@ public class HyperKanbanDbContext : DbContext
     public DbSet<Board> Boards { get; set; }
     public DbSet<WorkItem> WorkItems { get; set; }
     public DbSet<ContainerConfigEntry> ContainerConfigs { get; set; }
+    public DbSet<Project> Projects { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,9 +64,22 @@ public class HyperKanbanDbContext : DbContext
                     c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null).GetHashCode(),
                     c => JsonSerializer.Deserialize<Dictionary<string, string>>(JsonSerializer.Serialize(c, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!));
 
+            entity.Property(e => e.ProjectId).HasMaxLength(100);
+            entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.Created);
             entity.HasIndex(e => e.Creator);
             entity.HasIndex(e => e.Type);
+        });
+
+        // Configure Project entity
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.ToTable("Projects");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.HasIndex(e => e.Code).IsUnique();
         });
 
         // Configure WorkItem entity

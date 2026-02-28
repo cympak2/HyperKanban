@@ -2,12 +2,15 @@
 
 import { BoardView } from '@/components/BoardView';
 import CreateBoardModal from '@/components/CreateBoardModal';
+import UserMenu from '@/components/UserMenu';
 import { useState, useEffect } from 'react';
 import { apiService } from '@/services/api';
-import type { Board } from '@/types';
+import type { Board, Project } from '@/types';
 
 export default function Home() {
   const [boards, setBoards] = useState<Board[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoadingBoards, setIsLoadingBoards] = useState(true);
@@ -21,17 +24,31 @@ export default function Home() {
     try {
       setIsLoadingBoards(true);
       setError(null);
-      const fetchedBoards = await apiService.getBoards();
+      const [fetchedBoards, fetchedProjects] = await Promise.all([
+        apiService.getBoards(),
+        apiService.getProjects(),
+      ]);
       setBoards(fetchedBoards);
+      setProjects(fetchedProjects);
 
-      // Restore last used board, falling back to the first board
-      if (fetchedBoards.length > 0 && !selectedBoardId) {
-        const saved = localStorage.getItem('hyperkanban:lastBoardId');
-        const target = saved && fetchedBoards.find((b) => b.id === saved)
-          ? saved
-          : fetchedBoards[0].id;
-        setSelectedBoardId(target);
-      }
+      // Restore last used project
+      const savedProjectId = localStorage.getItem('hyperkanban:lastProjectId');
+      const resolvedProjectId =
+        savedProjectId && fetchedProjects.find((p) => p.id === savedProjectId)
+          ? savedProjectId
+          : fetchedProjects[0]?.id ?? null;
+
+      setSelectedProjectId(resolvedProjectId);
+
+      // Restore last used board within that project
+      const projectBoards = fetchedBoards.filter((b) => b.projectId === resolvedProjectId);
+      const savedBoardId = localStorage.getItem('hyperkanban:lastBoardId');
+      const resolvedBoardId =
+        savedBoardId && projectBoards.find((b) => b.id === savedBoardId)
+          ? savedBoardId
+          : projectBoards[0]?.id ?? (fetchedBoards[0]?.id ?? null);
+
+      setSelectedBoardId(resolvedBoardId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load boards');
     } finally {
@@ -41,6 +58,16 @@ export default function Home() {
 
   const handleBoardCreateSuccess = () => {
     loadBoards();
+  };
+
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    localStorage.setItem('hyperkanban:lastProjectId', projectId);
+    // Auto-select first board in the new project
+    const projectBoards = boards.filter((b) => b.projectId === projectId);
+    const newBoardId = projectBoards[0]?.id ?? null;
+    setSelectedBoardId(newBoardId);
+    if (newBoardId) localStorage.setItem('hyperkanban:lastBoardId', newBoardId);
   };
 
   if (isLoadingBoards) {
@@ -104,29 +131,57 @@ export default function Home() {
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">HyperKanban AI-DLC</h1>
-              <select
-                value={selectedBoardId || ''}
-                onChange={(e) => {
-                setSelectedBoardId(e.target.value);
-                localStorage.setItem('hyperkanban:lastBoardId', e.target.value);
-              }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                {boards.map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.name} ({board.state})
-                  </option>
-                ))}
-              </select>
+              {projects.length > 0 && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <select
+                    value={selectedProjectId || ''}
+                    onChange={(e) => handleProjectChange(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-gray-700"
+                  >
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        [{project.code}] {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+              {(() => {
+                const projectBoards = selectedProjectId
+                  ? boards.filter((b) => b.projectId === selectedProjectId)
+                  : boards;
+                return projectBoards.length > 0 ? (
+                  <select
+                    value={selectedBoardId || ''}
+                    onChange={(e) => {
+                      setSelectedBoardId(e.target.value);
+                      localStorage.setItem('hyperkanban:lastBoardId', e.target.value);
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {projectBoards.map((board) => (
+                      <option key={board.id} value={board.id}>
+                        {board.name} ({board.state})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">No boards in this project</span>
+                );
+              })()}
             </div>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              + New Board
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                + New Board
+              </button>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </div>

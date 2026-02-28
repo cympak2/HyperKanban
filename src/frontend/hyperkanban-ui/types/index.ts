@@ -1,3 +1,25 @@
+// Project Types
+export interface Project {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  created: string;
+  lastModified?: string;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  code: string;
+  description: string;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  code?: string;
+  description?: string;
+}
+
 // Board Types
 export interface Board {
   id: string;
@@ -11,6 +33,7 @@ export interface Board {
   permissions?: BoardPermissions;
   nextBoardId?: string;
   columnTransitionMap?: Record<string, string>;
+  projectId?: string;
 }
 
 export enum BoardState {
@@ -244,6 +267,7 @@ export interface UpdateBoardRequest {
   type?: BoardType;
   nextBoardId?: string;
   columnTransitionMap?: Record<string, string>;
+  projectId?: string;
 }
 
 export interface UpdateColumnRequest {

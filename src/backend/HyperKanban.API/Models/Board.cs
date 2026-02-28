@@ -15,6 +15,9 @@ public class Board
     public List<Column> Columns { get; set; } = new();
     public BoardPermissions Permissions { get; set; } = new();
     
+    // Project association
+    public string? ProjectId { get; set; }
+
     // Cross-board workflow configuration
     public string? NextBoardId { get; set; } // Target board when work completes
     public Dictionary<string, string> ColumnTransitionMap { get; set; } = new(); // sourceColumnId -> targetBoardColumnId
