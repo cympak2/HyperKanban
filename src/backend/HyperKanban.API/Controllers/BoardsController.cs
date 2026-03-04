@@ -214,6 +214,25 @@ public class BoardsController : ControllerBase
         }
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteBoard(string id)
+    {
+        try
+        {
+            await _boardService.DeleteBoardAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting board {BoardId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpGet("{id}/swimlanes")]
     public async Task<ActionResult<List<Swimlane>>> GetSwimlanes(string id)
     {

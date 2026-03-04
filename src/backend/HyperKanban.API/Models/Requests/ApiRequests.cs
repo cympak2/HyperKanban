@@ -13,6 +13,7 @@ public class CreateProjectRequest
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public List<string>? CicServerUrls { get; set; }
 }
 
 public class UpdateProjectRequest
@@ -20,6 +21,12 @@ public class UpdateProjectRequest
     public string? Name { get; set; }
     public string? Code { get; set; }
     public string? Description { get; set; }
+    public List<string>? CicServerUrls { get; set; }
+}
+
+public class VerifyCicServerRequest
+{
+    public string Url { get; set; } = string.Empty;
 }
 
 public class CreateColumnRequest

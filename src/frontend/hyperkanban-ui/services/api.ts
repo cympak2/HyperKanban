@@ -3,6 +3,8 @@ import type {
   WorkItem,
   ContainerConfig,
   Project,
+  CicServerStatus,
+  CicServerInstance,
   CreateProjectRequest,
   UpdateProjectRequest,
   CreateBoardRequest,
@@ -99,6 +101,12 @@ class ApiService {
   async deactivateBoard(id: string): Promise<void> {
     await this.request(`/api/boards/${id}/deactivate`, {
       method: 'POST',
+    });
+  }
+
+  async deleteBoard(id: string): Promise<void> {
+    await this.request(`/api/boards/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -294,6 +302,21 @@ class ApiService {
     await this.request(`/api/projects/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async verifyCicServer(projectId: string, url: string): Promise<CicServerStatus> {
+    return this.request<CicServerStatus>(`/api/projects/${projectId}/cic-servers/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+  }
+
+  async getCicServerStatuses(projectId: string): Promise<CicServerStatus[]> {
+    return this.request<CicServerStatus[]>(`/api/projects/${projectId}/cic-servers/status`);
+  }
+
+  async getCicServerInstances(projectId: string): Promise<CicServerInstance[]> {
+    return this.request<CicServerInstance[]>(`/api/projects/${projectId}/cic-servers/instances`);
   }
 }
 

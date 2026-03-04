@@ -51,6 +51,12 @@ builder.Services.AddCors(options =>
 // Add HTTP client for Azure REST API calls
 builder.Services.AddHttpClient();
 
+// Named client for cic server connectivity checks (short timeout)
+builder.Services.AddHttpClient("CicServerCheck", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+
 // Configure database and repositories
 var connectionString = builder.Configuration.GetConnectionString("MySQL")
     ?? throw new InvalidOperationException("MySQL connection string not configured");

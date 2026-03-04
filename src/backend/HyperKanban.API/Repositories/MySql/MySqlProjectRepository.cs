@@ -48,6 +48,7 @@ public class MySqlProjectRepository : IProjectRepository
         existing.Name = project.Name;
         existing.Code = project.Code;
         existing.Description = project.Description;
+        existing.CicServerUrls = project.CicServerUrls;
         existing.LastModified = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

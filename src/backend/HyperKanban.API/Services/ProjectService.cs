@@ -7,8 +7,8 @@ public interface IProjectService
 {
     Task<List<Project>> GetAllAsync();
     Task<Project?> GetByIdAsync(string id);
-    Task<Project> CreateAsync(string name, string code, string description);
-    Task<Project> UpdateAsync(string id, string? name, string? code, string? description);
+    Task<Project> CreateAsync(string name, string code, string description, List<string>? cicServerUrls = null);
+    Task<Project> UpdateAsync(string id, string? name, string? code, string? description, List<string>? cicServerUrls = null);
     Task DeleteAsync(string id);
     Task SeedDemoProjectAsync();
 }
@@ -28,7 +28,7 @@ public class ProjectService : IProjectService
 
     public Task<Project?> GetByIdAsync(string id) => _projectRepository.GetByIdAsync(id);
 
-    public async Task<Project> CreateAsync(string name, string code, string description)
+    public async Task<Project> CreateAsync(string name, string code, string description, List<string>? cicServerUrls = null)
     {
         var existing = await _projectRepository.GetByCodeAsync(code.ToUpperInvariant());
         if (existing != null)
@@ -38,13 +38,14 @@ public class ProjectService : IProjectService
         {
             Name = name,
             Code = code.ToUpperInvariant(),
-            Description = description
+            Description = description,
+            CicServerUrls = cicServerUrls ?? new List<string>()
         };
 
         return await _projectRepository.CreateAsync(project);
     }
 
-    public async Task<Project> UpdateAsync(string id, string? name, string? code, string? description)
+    public async Task<Project> UpdateAsync(string id, string? name, string? code, string? description, List<string>? cicServerUrls = null)
     {
         var project = await _projectRepository.GetByIdAsync(id)
             ?? throw new InvalidOperationException($"Project with id {id} not found");
@@ -60,6 +61,7 @@ public class ProjectService : IProjectService
 
         if (name != null) project.Name = name;
         if (description != null) project.Description = description;
+        if (cicServerUrls != null) project.CicServerUrls = cicServerUrls;
 
         return await _projectRepository.UpdateAsync(project);
     }

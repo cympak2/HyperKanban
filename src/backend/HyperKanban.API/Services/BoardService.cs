@@ -17,6 +17,7 @@ public interface IBoardService
     Task<Board> UpdateColumnTypeAsync(string boardId, string columnId, UpdateColumnTypeRequest request);
     Task<Board> DeleteColumnAsync(string boardId, string columnId);
     Task ValidateBoardConfigurationAsync(string boardId);
+    Task DeleteBoardAsync(string id);
 }
 
 public class BoardService : IBoardService
@@ -325,5 +326,16 @@ public class BoardService : IBoardService
         }
 
         _logger.LogInformation("Board {BoardId} configuration validated successfully", boardId);
+    }
+
+    public async Task DeleteBoardAsync(string id)
+    {
+        var board = await _boardRepository.GetByIdAsync(id);
+        if (board == null)
+        {
+            throw new KeyNotFoundException($"Board {id} not found");
+        }
+        await _boardRepository.DeleteAsync(id);
+        _logger.LogInformation("Board {BoardId} deleted", id);
     }
 }

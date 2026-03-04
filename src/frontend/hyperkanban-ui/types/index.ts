@@ -6,18 +6,43 @@ export interface Project {
   description: string;
   created: string;
   lastModified?: string;
+  cicServerUrls: string[];
+}
+
+export interface CicServerStatus {
+  url: string;
+  reachable: boolean;
+  error?: string;
+  statusCode?: number;
+  version?: string;
+}
+
+export interface CicServerInstance {
+  instanceName: string;
+  containerId: string;
+  containerName: string;
+  port: number;
+  model?: string;
+  logLevel: string;
+  startedAt: string;
+  workspaceFolder: string;
+  status: 'running' | 'stopped';
+  uptime?: string;
+  cicServerUrl: string;
 }
 
 export interface CreateProjectRequest {
   name: string;
   code: string;
   description: string;
+  cicServerUrls?: string[];
 }
 
 export interface UpdateProjectRequest {
   name?: string;
   code?: string;
   description?: string;
+  cicServerUrls?: string[];
 }
 
 // Board Types

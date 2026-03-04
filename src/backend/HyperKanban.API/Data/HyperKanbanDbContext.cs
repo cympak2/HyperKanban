@@ -80,6 +80,17 @@ public class HyperKanbanDbContext : DbContext
             entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.HasIndex(e => e.Code).IsUnique();
+
+            entity.Property(e => e.CicServerUrls)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
+                )
+                .HasColumnType("json")
+                .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                    (c1, c2) => c1!.SequenceEqual(c2!),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToList()));
         });
 
         // Configure WorkItem entity

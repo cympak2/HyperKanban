@@ -8,4 +8,5 @@ public class Project
     public string Description { get; set; } = string.Empty;
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime? LastModified { get; set; }
+    public List<string> CicServerUrls { get; set; } = new();
 }
